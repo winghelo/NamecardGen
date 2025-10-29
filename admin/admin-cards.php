@@ -379,7 +379,7 @@ jQuery(document).ready(function($) {
 /**
  * 獲取名片狀態標籤
  */
-private function get_namecard_status_label($status) {
+function get_namecard_status_label($status) {
     $labels = array(
         'draft' => __('草稿', 'namecardgen'),
         'processing' => __('處理中', 'namecardgen'),
