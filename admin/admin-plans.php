@@ -21,7 +21,7 @@ switch ($action) {
     case 'edit':
         // 處理表單提交
         if (isset($_POST['submit_plan'])) {
-            $result = $this->handle_plan_form_submit($_POST, $plan_id);
+            $result = $admin_instance->handle_plan_form_submit($_POST, $plan_id);
             if (!is_wp_error($result)) {
                 $message = $action === 'add' ? __('方案已成功新增', 'namecardgen') : __('方案已成功更新', 'namecardgen');
                 $message_type = 'success';
@@ -55,9 +55,9 @@ if ($message) {
 
 // 顯示對應的頁面
 if ($action === 'add' || $action === 'edit') {
-    $this->display_plan_form($plan_id, $action);
+    $admin_instance->display_plan_form($plan_id, $action);
 } else {
-    $this->display_plans_list();
+    $admin_instance->display_plans_list();
 }
 
 /**
@@ -118,7 +118,7 @@ private function display_plans_list() {
                                 </td>
                                 <td data-colname="<?php _e('狀態', 'namecardgen'); ?>">
                                     <span class="status-badge status-<?php echo esc_attr($plan->status); ?>">
-                                        <?php echo $this->get_plan_status_label($plan->status); ?>
+                                        <?php echo $admin_instance->get_plan_status_label($plan->status); ?>
                                     </span>
                                 </td>
                                 <td data-colname="<?php _e('建立時間', 'namecardgen'); ?>">
