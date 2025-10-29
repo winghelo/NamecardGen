@@ -1,2 +1,0 @@
-# NamecardGen
-NamecardGen_Plugin
