@@ -21,7 +21,7 @@ switch ($action) {
     case 'edit':
         // 處理表單提交
         if (isset($_POST['submit_client'])) {
-            $result = $this->handle_client_form_submit($_POST, $client_id);
+            $result = $admin_instance->handle_client_form_submit($_POST, $client_id);
             if (!is_wp_error($result)) {
                 $message = $action === 'add' ? __('客戶已成功新增', 'namecardgen') : __('客戶已成功更新', 'namecardgen');
                 $message_type = 'success';
@@ -55,9 +55,9 @@ if ($message) {
 
 // 顯示對應的頁面
 if ($action === 'add' || $action === 'edit') {
-    $this->display_client_form($client_id, $action);
+    $admin_instance->display_client_form($client_id, $action);
 } else {
-    $this->display_clients_list();
+    $admin_instance->display_clients_list();
 }
 
 /**
@@ -137,7 +137,7 @@ private function display_clients_list() {
                                 <td data-colname="<?php _e('建立時間', 'namecardgen'); ?>"><?php echo date('Y-m-d H:i', strtotime($client->created_at)); ?></td>
                                 <td data-colname="<?php _e('狀態', 'namecardgen'); ?>">
                                     <span class="status-badge status-<?php echo esc_attr($client->status); ?>">
-                                        <?php echo $this->get_status_label($client->status); ?>
+                                        <?php echo $admin_instance->get_status_label($client->status); ?>
                                     </span>
                                 </td>
                                 <td data-colname="<?php _e('操作', 'namecardgen'); ?>">
