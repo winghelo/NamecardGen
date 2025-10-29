@@ -27,6 +27,11 @@ class NamecardGen_Database {
         $this->create_plans_table();
         $this->create_namecards_table();
         $this->create_orders_table();
+
+        // 記錄資料庫版本
+    update_option('namecardgen_db_version', '1.0.0');
+    }
+
     }
     
     private function create_clients_table() {
