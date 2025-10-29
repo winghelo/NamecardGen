@@ -20,21 +20,21 @@ class NamecardGen_Admin {
     }
     
     private function __construct() {
-        $this->init_hooks();
+        $admin_instance->init_hooks();
     }
     
     private function init_hooks() {
         // 添加管理員選單
-        add_action('admin_menu', array($this, 'add_admin_menu'));
+        add_action('admin_menu', array($admin_instance, 'add_admin_menu'));
         
         // 載入管理員樣式和腳本
-        add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
+        add_action('admin_enqueue_scripts', array($admin_instance, 'enqueue_admin_scripts'));
         
         // 註冊AJAX處理
-        add_action('wp_ajax_namecardgen_admin_action', array($this, 'handle_ajax_request'));
+        add_action('wp_ajax_namecardgen_admin_action', array($admin_instance, 'handle_ajax_request'));
         
         // 添加管理員通知
-        add_action('admin_notices', array($this, 'show_admin_notices'));
+        add_action('admin_notices', array($admin_instance, 'show_admin_notices'));
     }
     
     /**
@@ -49,55 +49,55 @@ class NamecardGen_Admin {
             __('名片生成器', 'namecardgen'),
             $capability,
             'namecardgen',
-            array($this, 'display_main_page'),
+            array($admin_instance, 'display_main_page'),
             'dashicons-id',
             30
         );
         
         // 子選單項目
-        $this->pages[] = add_submenu_page(
+        $admin_instance->pages[] = add_submenu_page(
             'namecardgen',
             __('總覽', 'namecardgen'),
             __('總覽', 'namecardgen'),
             $capability,
             'namecardgen',
-            array($this, 'display_main_page')
+            array($admin_instance, 'display_main_page')
         );
         
-        $this->pages[] = add_submenu_page(
+        $admin_instance->pages[] = add_submenu_page(
             'namecardgen',
             __('客戶管理', 'namecardgen'),
             __('客戶管理', 'namecardgen'),
             $capability,
             'namecardgen-clients',
-            array($this, 'display_clients_page')
+            array($admin_instance, 'display_clients_page')
         );
         
-        $this->pages[] = add_submenu_page(
+        $admin_instance->pages[] = add_submenu_page(
             'namecardgen',
             __('方案管理', 'namecardgen'),
             __('方案管理', 'namecardgen'),
             $capability,
             'namecardgen-plans',
-            array($this, 'display_plans_page')
+            array($admin_instance, 'display_plans_page')
         );
         
-        $this->pages[] = add_submenu_page(
+        $admin_instance->pages[] = add_submenu_page(
             'namecardgen',
             __('名片管理', 'namecardgen'),
             __('名片管理', 'namecardgen'),
             $capability,
             'namecardgen-cards',
-            array($this, 'display_cards_page')
+            array($admin_instance, 'display_cards_page')
         );
         
-        $this->pages[] = add_submenu_page(
+        $admin_instance->pages[] = add_submenu_page(
             'namecardgen',
             __('設定', 'namecardgen'),
             __('設定', 'namecardgen'),
             $capability,
             'namecardgen-settings',
-            array($this, 'display_settings_page')
+            array($admin_instance, 'display_settings_page')
         );
     }
     
@@ -216,15 +216,15 @@ class NamecardGen_Admin {
         
         switch ($action) {
             case 'delete_client':
-                $response = $this->delete_client($_POST['client_id']);
+                $response = $admin_instance->delete_client($_POST['client_id']);
                 break;
                 
             case 'delete_plan':
-                $response = $this->delete_plan($_POST['plan_id']);
+                $response = $admin_instance->delete_plan($_POST['plan_id']);
                 break;
                 
             case 'update_status':
-                $response = $this->update_item_status($_POST['item_id'], $_POST['item_type'], $_POST['status']);
+                $response = $admin_instance->update_item_status($_POST['item_id'], $_POST['item_type'], $_POST['status']);
                 break;
                 
             default:
