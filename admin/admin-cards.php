@@ -143,7 +143,7 @@ $total_pages = ceil($total_namecards / $per_page);
                             </td>
                             <td data-colname="<?php _e('狀態', 'namecardgen'); ?>">
                                 <span class="status-badge status-<?php echo esc_attr($namecard->status); ?>">
-                                    <?php echo $this->get_namecard_status_label($namecard->status); ?>
+                                    <?php echo $admin_instance->get_namecard_status_label($namecard->status); ?>
                                 </span>
                             </td>
                             <td data-colname="<?php _e('建立時間', 'namecardgen'); ?>">
