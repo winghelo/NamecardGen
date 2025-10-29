@@ -1,123 +1,216 @@
 <?php
+/**
+ * 客戶管理類別
+ */
+
 if (!defined('ABSPATH')) {
     exit;
 }
 
 class NamecardGen_Clients {
     
-    private $database;
+    private $table_name;
     
-    public function __construct($database = null) {
-        if ($database) {
-            $this->database = $database;
-        }
+    public function __construct() {
+        global $wpdb;
+        $this->table_name = $wpdb->prefix . 'namecardgen_clients';
     }
     
-    public function set_database($database) {
-        $this->database = $database;
-    }
-    
-    public function add_client($client_data) {
+    /**
+     * 獲取所有客戶
+     */
+    public function get_all_clients($args = array()) {
         global $wpdb;
         
-        $table_name = $wpdb->prefix . 'namecardgen_clients';
-        
-        // 設定預設值
-        $default_data = array(
+        $defaults = array(
+            'page' => 1,
+            'per_page' => 20,
             'status' => 'active',
-            'created_at' => current_time('mysql')
+            'search' => ''
         );
         
-        $client_data = array_merge($default_data, $client_data);
+        $args = wp_parse_args($args, $defaults);
         
-        return $wpdb->insert($table_name, $client_data);
-    }
-    
-    public function update_client_plan($client_id, $plan_id) {
-        global $wpdb;
+        $where = "WHERE status = '" . esc_sql($args['status']) . "'";
         
-        $table_name = $wpdb->prefix . 'namecardgen_clients';
-        $expired_at = null;
-        
-        // 如果有選擇計劃，計算到期時間
-        if ($plan_id) {
-            $plan = $this->get_plan($plan_id);
-            if ($plan && $plan->valid_days > 0) {
-                $expired_at = date('Y-m-d H:i:s', strtotime("+{$plan->valid_days} days"));
-            }
+        if (!empty($args['search'])) {
+            $where .= $wpdb->prepare(
+                " AND (company_name LIKE %s OR contact_person LIKE %s OR email LIKE %s)",
+                '%' . $wpdb->esc_like($args['search']) . '%',
+                '%' . $wpdb->esc_like($args['search']) . '%',
+                '%' . $wpdb->esc_like($args['search']) . '%'
+            );
         }
         
-        return $wpdb->update(
-            $table_name,
+        $offset = ($args['page'] - 1) * $args['per_page'];
+        
+        $clients = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT * FROM {$this->table_name} 
+                 {$where} 
+                 ORDER BY created_at DESC 
+                 LIMIT %d OFFSET %d",
+                $args['per_page'],
+                $offset
+            )
+        );
+        
+        return $clients;
+    }
+    
+    /**
+     * 根據ID獲取客戶
+     */
+    public function get_client_by_id($client_id) {
+        global $wpdb;
+        
+        return $wpdb->get_row(
+            $wpdb->prepare("SELECT * FROM {$this->table_name} WHERE id = %d", $client_id)
+        );
+    }
+    
+    /**
+     * 根據用戶ID獲取客戶
+     */
+    public function get_client_by_user_id($user_id) {
+        global $wpdb;
+        
+        return $wpdb->get_row(
+            $wpdb->prepare("SELECT * FROM {$this->table_name} WHERE user_id = %d", $user_id)
+        );
+    }
+    
+    /**
+     * 創建新客戶
+     */
+    public function create_client($data) {
+        global $wpdb;
+        
+        $defaults = array(
+            'user_id' => get_current_user_id(),
+            'company_name' => '',
+            'contact_person' => '',
+            'email' => '',
+            'phone' => '',
+            'address' => '',
+            'status' => 'active'
+        );
+        
+        $data = wp_parse_args($data, $defaults);
+        
+        // 驗證必要欄位
+        if (empty($data['company_name'])) {
+            return new WP_Error('missing_company', '公司名稱是必填欄位');
+        }
+        
+        $result = $wpdb->insert(
+            $this->table_name,
             array(
-                'plan_id' => $plan_id,
-                'expired_at' => $expired_at,
-                'updated_at' => current_time('mysql')
+                'user_id' => $data['user_id'],
+                'company_name' => sanitize_text_field($data['company_name']),
+                'contact_person' => sanitize_text_field($data['contact_person']),
+                'email' => sanitize_email($data['email']),
+                'phone' => sanitize_text_field($data['phone']),
+                'address' => sanitize_textarea_field($data['address']),
+                'status' => $data['status']
             ),
-            array('id' => $client_id)
+            array('%d', '%s', '%s', '%s', '%s', '%s', '%s')
         );
+        
+        if ($result === false) {
+            return new WP_Error('db_error', '創建客戶時發生資料庫錯誤');
+        }
+        
+        return $wpdb->insert_id;
     }
     
+    /**
+     * 更新客戶資料
+     */
+    public function update_client($client_id, $data) {
+        global $wpdb;
+        
+        $update_data = array();
+        $format = array();
+        
+        if (isset($data['company_name'])) {
+            $update_data['company_name'] = sanitize_text_field($data['company_name']);
+            $format[] = '%s';
+        }
+        
+        if (isset($data['contact_person'])) {
+            $update_data['contact_person'] = sanitize_text_field($data['contact_person']);
+            $format[] = '%s';
+        }
+        
+        if (isset($data['email'])) {
+            $update_data['email'] = sanitize_email($data['email']);
+            $format[] = '%s';
+        }
+        
+        if (isset($data['phone'])) {
+            $update_data['phone'] = sanitize_text_field($data['phone']);
+            $format[] = '%s';
+        }
+        
+        if (isset($data['address'])) {
+            $update_data['address'] = sanitize_textarea_field($data['address']);
+            $format[] = '%s';
+        }
+        
+        if (isset($data['status'])) {
+            $update_data['status'] = sanitize_text_field($data['status']);
+            $format[] = '%s';
+        }
+        
+        if (empty($update_data)) {
+            return new WP_Error('no_data', '沒有提供要更新的資料');
+        }
+        
+        $result = $wpdb->update(
+            $this->table_name,
+            $update_data,
+            array('id' => $client_id),
+            $format,
+            array('%d')
+        );
+        
+        if ($result === false) {
+            return new WP_Error('db_error', '更新客戶時發生資料庫錯誤');
+        }
+        
+        return $result;
+    }
+    
+    /**
+     * 刪除客戶（軟刪除）
+     */
     public function delete_client($client_id) {
-        global $wpdb;
-        $table_name = $wpdb->prefix . 'namecardgen_clients';
-        return $wpdb->delete($table_name, array('id' => $client_id));
+        return $this->update_client($client_id, array('status' => 'deleted'));
     }
     
-    public function get_client($client_id) {
+    /**
+     * 獲取客戶數量
+     */
+    public function get_clients_count($status = 'active') {
         global $wpdb;
-        $table_name = $wpdb->prefix . 'namecardgen_clients';
-        return $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $client_id));
-    }
-    
-    public function get_all_clients() {
-        global $wpdb;
-        $clients_table = $wpdb->prefix . 'namecardgen_clients';
-        $plans_table = $wpdb->prefix . 'namecardgen_plans';
         
-        return $wpdb->get_results("
-            SELECT c.*, p.plan_name, p.price 
-            FROM $clients_table c 
-            LEFT JOIN $plans_table p ON c.plan_id = p.id 
-            ORDER BY c.created_at DESC
-        ");
+        return $wpdb->get_var(
+            $wpdb->prepare("SELECT COUNT(*) FROM {$this->table_name} WHERE status = %s", $status)
+        );
     }
     
-    public function get_plan($plan_id) {
+    /**
+     * 檢查客戶是否存在
+     */
+    public function client_exists($client_id) {
         global $wpdb;
-        $table_name = $wpdb->prefix . 'namecardgen_plans';
-        return $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $plan_id));
-    }
-    
-    public function get_client_stats() {
-        global $wpdb;
-        $table_name = $wpdb->prefix . 'namecardgen_clients';
         
-        $stats = array(
-            'total_clients' => $wpdb->get_var("SELECT COUNT(*) FROM $table_name"),
-            'today_clients' => $wpdb->get_var($wpdb->prepare(
-                "SELECT COUNT(*) FROM $table_name WHERE DATE(created_at) = %s",
-                current_time('Y-m-d')
-            )),
-            'month_clients' => $wpdb->get_var($wpdb->prepare(
-                "SELECT COUNT(*) FROM $table_name WHERE YEAR(created_at) = %d AND MONTH(created_at) = %d",
-                current_time('Y'),
-                current_time('m')
-            ))
+        $count = $wpdb->get_var(
+            $wpdb->prepare("SELECT COUNT(*) FROM {$this->table_name} WHERE id = %d AND status != 'deleted'", $client_id)
         );
         
-        return $stats;
-    }
-    
-    public function get_client_status($client) {
-        if ('active' !== $client->status) {
-            return array('class' => 'status-inactive', 'text' => '❌ 無效');
-        }
-        
-        if ($client->expired_at && strtotime($client->expired_at) < time()) {
-            return array('class' => 'status-expired', 'text' => '⏰ 已過期');
-        }
-        
-        return array('class' => 'status-active', 'text' => '✅ 有效');
+        return $count > 0;
     }
 }
+?>
