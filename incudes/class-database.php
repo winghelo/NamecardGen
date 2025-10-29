@@ -80,7 +80,6 @@ class NamecardGen_Database {
         dbDelta($sql);
         
         // 插入預設方案
-        $this->insert_default_plans();
     }
     
     private function create_namecards_table() {
